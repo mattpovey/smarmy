@@ -5,16 +5,24 @@ import datetime
 import time
 import influxdb_client
 import sys
+import syslog
 from influxdb_client.client.write_api import SYNCHRONOUS
+
 
 # -----------------------------------------------------------------------------
 # FUNCTION DEFINITIONS
 # -----------------------------------------------------------------------------
 
+# -----------------------------------------------------------------------------
+# Takes the tagset from sm_idbprep() and uses it to build the line protocol
+# output. The line protocol is then passed to push2idb() to be written to
+# InfluxDB
+
 def record_readings(serial_obj, tagset):
     #os.system('clear')
     sm_ts, sm_gasts, equipment, gas_equipment = sm_idbprep()
-    ilp_list = []
+    #ilp_list = []
+
     for tag_key in tagset:
         this_tag_key = tag_key
         for tag_val in tagset[tag_key].keys():
@@ -35,13 +43,27 @@ def record_readings(serial_obj, tagset):
                 fields = this_unit + "=" + this_value
                 # Build the line protocol output
                 tag_set = "MeterID" + "=" + equipment + "," + this_tag_key + "=" + this_tag_val
-                outline = msr_record + "," + tag_set + " " + fields + " " + sm_ts
-                #print(outline)
-                push2idb(outline)
+                lp_out = msr_record + "," + tag_set + " " + fields + " " + sm_ts
+                #print(lp_out)
 
+                # Attempt to push the line protocol to InfluxDB
+                # If push2idb returns False, write the line to lp_buffer and log
+                # the failure to syslog
+
+                if push2idb(lp_out) == False:
+                    lp_buffer.append(lp_out)
+                    syslog.syslog(syslog.LOG_ERR, "Failed to write to InfluxDB")
+                    syslog.syslog(syslog.LOG_ERR, lp_out)
+                    print("InfluxDB write failed")
+
+# -----------------------------------------------------------------------------
+# Take a line of InfluxDB line protocol and push it to the InfluxDB server
+# Return True if successful, False if not
+# Fail gracefully if the server is not available
+# -----------------------------------------------------------------------------
 def push2idb(lp_out):
-    # Takes whatever line of influx line protocol has been prepared as lp_out and 
-    # pushes it to the influxdb server
+    # Server metadata
+    # TODO: Move this to a config file
     bucket = "sm_collector"
     url = "http://127.0.0.1:8086"
     org = "kyomu.co.uk"
@@ -51,8 +73,15 @@ def push2idb(lp_out):
         token=token,
         org=org
     )
-    write_api = client.write_api(write_options=SYNCHRONOUS)
-    write_api.write(url=url, bucket=bucket, org=org, record=[lp_out])
+
+    # Try to write the data to InfluxDB
+    # Return True if successful, False if not
+    try:
+        write_api = client.write_api(write_options=SYNCHRONOUS)
+        write_api.write(url=url, bucket=bucket, org=org, record=[lp_out])
+        return True
+    except:
+        return False
 
 
 def p1_listener():
@@ -60,6 +89,7 @@ def p1_listener():
     # library does not seem to hold a connection. It will only report that the 
     # port is in use if it happens to be sending data at that time. 
     serial_reader = SerialReader(
+        # TODO: Move this to a config file
         device='/dev/ttyUSB0',
         serial_settings=SERIAL_SETTINGS_V5,
         telegram_specification=telegram_specifications.V5
@@ -76,6 +106,11 @@ def p1_listener():
         print("P1 serial connection to smartmeter is avaialble.")
         return serial_reader
 
+# -----------------------------------------------------------------------------
+# sm_idbprep() - Prepare the data for InfluxDB
+# Configures the tagset (InfluxDB schema equivalent) and returns four values
+# that are used in the line protocol output
+# -----------------------------------------------------------------------------
 def sm_idbprep():
 
     # The Gas timestamp comes from the HOURLY_GAS_METER_READING.datetime property
@@ -176,7 +211,24 @@ sme_readings = {
 # MAIN
 # -----------------------------------------------------------------------------
 
+# Attempt to open lp_buffer.json
+# If it exists, leave the file handle open, otherwise, create it and write
+# the error to syslog
+
+try:
+    lp_buffer = open("lp_buffer.json", "a+")
+except:
+    syslog.syslog("Unable to open /var/db/lp_buffer.json for writing. /
+                    Check permissions.")
+    sys.exit()
+
+# Create the serial port object
 serial_reader = p1_listener()
+
+# Loop forever reading telegrams
+# TODO: Every hour, attempt to push the contents of lp_buffer.json to InfluxDB
+# TODO: If that fails, log the error and continue
 for telegram in serial_reader.read_as_object():
     record_readings(serial_reader, sme_readings)
+    serial_reader.
 
