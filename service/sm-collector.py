@@ -93,9 +93,10 @@ def push2idb(lp_out):
         write_api = client.write_api(write_options=SYNCHRONOUS)
         write_api.write(url=url, bucket=bucket, org=org, record=[lp_out])
         return True
-    except:
-
-
+    except Exception as e:
+        syslog.syslog(syslog.LOG_ERR, "Failed to write to InfluxDB")
+        print(e)
+        return False
     
 def p1_listener():
     # It is probably not useful to test whether the port is in use since the dsmr
@@ -110,16 +111,17 @@ def p1_listener():
             telegram_specification=telegram_specifications.V5
         )
     except Exception as e:
+        print("Failed to open serial port. Is the device connected?")
         print(e)
         sys.exit()
+
 
     try:
         for telegram in serial_reader.read_as_object():
             print(str(getattr(telegram, "P1_MESSAGE_TIMESTAMP").value))
             break
     except:
-        print("Device reports readiness to read but returned no data. \nCheck \
-               whether the port is already in use.")
+        print("Device reports readiness to read but returned no data. \nCheck whether the port is already in use.")
         sys.exit()
     finally:
         print("P1 serial connection to smartmeter is avaialble.")
@@ -236,10 +238,9 @@ sme_readings = {
 # the error to syslog
 print("Smartmeter reader starting.")
 buffer_file = "/var/db/lp_buffer.json"
-
 try:
     print("Testing for buffer file to log data if InfluxDB server is \
-          unavailable.")
+        unavailable.")
     lp_buffer = open(buffer_file, "a+")
 except:
     syslog.syslog("Unable to open /var/db/lp_buffer.json for writing. \
@@ -248,6 +249,7 @@ except:
     sys.exit()
 
 # Create the serial port object
+
 try:
     print("Creating serial port object.")
     serial_reader = p1_listener()
