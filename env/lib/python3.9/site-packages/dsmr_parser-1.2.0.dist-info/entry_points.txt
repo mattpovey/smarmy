@@ -1,0 +1,3 @@
+[console_scripts]
+dsmr_console = dsmr_parser.__main__:console
+

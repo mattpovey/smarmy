@@ -216,13 +216,15 @@ sme_readings = {
 # Attempt to open lp_buffer.json
 # If it exists, leave the file handle open, otherwise, create it and write
 # the error to syslog
-
+print("Hello")
 buffer_file = "/var/db/lp_buffer.json"
 try:
+    print("Testing for buffer file.")
     lp_buffer = open(buffer_file, "a+")
 except:
     syslog.syslog("Unable to open /var/db/lp_buffer.json for writing. \
                     Check permissions.")
+    print("Unable to open /var/db/lp_buffer.json for writing.")
     sys.exit()
 
 # Create the serial port object
