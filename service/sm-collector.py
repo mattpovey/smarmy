@@ -235,7 +235,7 @@ except:
 
 try:
     print("Creating serial port object.")
-    serial_reader = p1_listener())
+    serial_reader = p1_listener()
 except:
     syslog.syslog("Unable to create serial port object. Check permissions.")
     print("Unable to create serial port object. Check that it exists.")
