@@ -274,7 +274,7 @@ tel_count = 0
 try:
     for telegram in serial_reader.read_as_object():
         if tel_count % 10 == 0:
-            progress_message = "Read " + str(tel_count) + " telegrams to Influxdb")
+            progress_message = "Read " + str(tel_count) + " telegrams to Influxdb"
             syslog.syslog(syslog.LOG_INFO, progress_message)
         record_readings(sme_readings, lp_buffer)
         tel_count += 1
