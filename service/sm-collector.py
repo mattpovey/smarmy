@@ -21,7 +21,6 @@ from influxdb_client.client.write_api import SYNCHRONOUS
 def record_readings(serial_obj, tagset, lp_buffer):
     os.system('clear')
     sm_ts, sm_gasts, equipment, gas_equipment = sm_idbprep()
-    #ilp_list = []
 
     for tag_key in tagset:
         this_tag_key = tag_key
@@ -45,11 +44,13 @@ def record_readings(serial_obj, tagset, lp_buffer):
                 tag_set = "MeterID" + "=" + equipment + "," + this_tag_key + "=" + this_tag_val
                 lp_out = msr_record + "," + tag_set + " " + fields + " " + sm_ts
                 #print(lp_out)
+                print("LP Prepared...")
 
                 # Attempt to push the line protocol to InfluxDB
                 # If push2idb returns False, write the line to lp_buffer and log
                 # the failure to syslog
 
+                print("Attempting push to InfluxDB...")
                 if push2idb(lp_out) == False:
                     lp_buffer.write(lp_out)
                     lp_buffer.write("\n")
@@ -231,11 +232,21 @@ except:
     sys.exit()
 
 # Create the serial port object
-serial_reader = p1_listener()
+
+try:
+    print("Creating serial port object.")
+    serial_reader = p1_listener())
+except:
+    syslog.syslog("Unable to create serial port object. Check permissions.")
+    print("Unable to create serial port object. Check that it exists.")
+    sys.exit()
+
+print("Serial port object created.")
 
 # Loop forever reading telegrams
 # TODO: Every hour, attempt to push the contents of lp_buffer.json to InfluxDB
 # TODO: If that fails, log the error and continue
+print("Entering main loop.")
 for telegram in serial_reader.read_as_object():
     record_readings(serial_reader, sme_readings, lp_buffer)
 
