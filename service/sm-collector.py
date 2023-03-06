@@ -60,9 +60,8 @@ def record_readings(tagset, lp_buffer):
                 # TODO: The whole array can be dumped to the buffer file it it fails
 
                 #print("Attempting push to InfluxDB...")
-                if push2idb(lp_out) == False:
-                    lp_buffer.write(lp_out)
-                    lp_buffer.write("\n")
+                push2idb(lp_out)
+
 
 
 # -----------------------------------------------------------------------------
@@ -90,12 +89,11 @@ def push2idb(lp_out):
     try:
         write_api = client.write_api(write_options=SYNCHRONOUS)
         write_api.write(url=url, bucket=bucket, org=org, record=[lp_out])
-        return True
     except Exception as e:
         error = "Failed to write to InfluxDB" + str(e)
-        syslog.syslog(syslog.LOG_ERR, error)
-        print("InfluxDB write failed: ", error)
-        return False
+        lp_buffer.write(lp_out)
+        lp_buffer.write("\n")
+        logError(error, exit=False)
     
 def p1_listener():
     # It is probably not useful to test whether the port is in use since the dsmr
@@ -111,18 +109,16 @@ def p1_listener():
         )
     except Exception as e:
         error = "Failed to open serial port.", str(e)
-        syslog.syslog(syslog.LOG_ERR, error)
-        print(error)
-        sys.exit()
+        logError(error, exit=True)
 
     try:
         for telegram in serial_reader.read_as_object():
             print(str(getattr(telegram, "P1_MESSAGE_TIMESTAMP").value))
             break
-    except:
-        print("Device reports readiness to read but returned no data. \
-              \nCheck whether the port is already in use.")
-        sys.exit()
+    except Exception as e:
+        error = "Device reports readiness to read but returned no data. \
+            Check whether the port is already in use." + str(e)
+        logError(error, exit=True)
     finally:
         print("P1 serial connection to smartmeter is avaialble.")
         return serial_reader
@@ -251,16 +247,12 @@ syslog.openlog(logoption=syslog.LOG_PID, facility=syslog.LOG_DAEMON)
 
 try:
     print("Testing for buffer file to log data if InfluxDB server is \
-        unavailable.")
+          unavailable.")
     lp_buffer = open(buffer_file, "a+")
 except Exception as e:
     error = "Unable to open " + buffer_file + " for writing. Check \
             permissions." + str(e)
-    syslog.syslog(error)
-    print(error)
-    syslog.syslog("sm-collector.py exiting.")
-    print("sm-collector.py exiting.")
-    sys.exit()
+    logError(error, exit=True)
 
 # Create the serial port object
 
@@ -270,11 +262,7 @@ try:
 except Exception as e:
     error = "Unable to create serial port object. Check permissions \
             and that it is the correct port for this OS." + str(e)
-    syslog.syslog(error)
-    syslog.syslog("sm-collector.py exiting.")
-    print(error)
-    print("sm-collector.py exiting.")
-    sys.exit()
+    logError(error, exit=True)
 
 print("Serial port object created.")
 
