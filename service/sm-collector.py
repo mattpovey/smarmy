@@ -8,6 +8,8 @@ import sys
 import syslog
 from influxdb_client.client.write_api import SYNCHRONOUS
 
+# TODO: Create a function to handle all syslog logging and pass it an error
+#       message and a log level
 
 # -----------------------------------------------------------------------------
 # FUNCTION DEFINITIONS
@@ -61,11 +63,7 @@ def record_readings(tagset, lp_buffer):
                 if push2idb(lp_out) == False:
                     lp_buffer.write(lp_out)
                     lp_buffer.write("\n")
-                    syslog.syslog("Failed to write to InfluxDB")
-                    #syslog.syslog(syslog.LOG_ERR, lp_out)
-                    print("InfluxDB write failed")
-                #else:
-                    #print("InfluxDB write successful")
+
 
 # -----------------------------------------------------------------------------
 # Take a line of InfluxDB line protocol and push it to the InfluxDB server.
@@ -79,7 +77,7 @@ def push2idb(lp_out):
     bucket = "sm_collector"
     url = "https://influxdb.sys.kyomu.co.uk:8086"
     org = "kyomu.co.uk"
-    token = "!!28AWec8baj88R0Do-92VevegExVRDEfs7vQm_Y9xVA4GutIbjcAevmTUVRp3OqrDZWY7SunrFD31-oDqHFvm3A=="
+    token = "28AWec8baj88R0Do-92VevegExVRDEfs7vQm_Y9xVA4GutIbjcAevmTUVRp3OqrDZWY7SunrFD31-oDqHFvm3A=="
     client = influxdb_client.InfluxDBClient(
         url=url,
         token=token,
@@ -96,6 +94,7 @@ def push2idb(lp_out):
     except Exception as e:
         error = "Failed to write to InfluxDB" + str(e)
         syslog.syslog(syslog.LOG_ERR, error)
+        print("InfluxDB write failed: ", error)
         return False
     
 def p1_listener():
@@ -111,8 +110,9 @@ def p1_listener():
             telegram_specification=telegram_specifications.V5
         )
     except Exception as e:
-        syslog.syslog("Failed to open serial port.", str(e))
-        print("Failed to open serial port", str(e))
+        error = "Failed to open serial port.", str(e)
+        syslog.syslog(syslog.LOG_ERR, error)
+        print(error)
         sys.exit()
 
     try:
@@ -245,9 +245,12 @@ try:
         unavailable.")
     lp_buffer = open(buffer_file, "a+")
 except Exception as e:
-    syslog.syslog("Unable to open /var/db/lp_buffer.json for writing. \
-                    Check permissions.", str(e))
-    print("Unable to open /var/db/lp_buffer.json for writing.", str(e))
+    error = "Unable to open " + buffer_file + " for writing. Check \
+            permissions." + str(e)
+    syslog.syslog(error)
+    print(error)
+    syslog.syslog("sm-collector.py exiting.")
+    print("sm-collector.py exiting.")
     sys.exit()
 
 # Create the serial port object
@@ -255,12 +258,12 @@ except Exception as e:
 try:
     print("Creating serial port object.")
     serial_reader = p1_listener()
-except:
-    syslog.syslog("Unable to create serial port object. Check permissions \
-                  and that it is the correct port for this OS.")
+except Exception as e:
+    error = "Unable to create serial port object. Check permissions \
+            and that it is the correct port for this OS." + str(e)
+    syslog.syslog(error)
     syslog.syslog("sm-collector.py exiting.")
-    print("Unable to create serial port object. Check permissions \
-                  and that it is the correct port for this OS.")
+    print(error)
     print("sm-collector.py exiting.")
     sys.exit()
 
