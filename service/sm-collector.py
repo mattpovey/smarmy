@@ -14,9 +14,11 @@ from influxdb_client.client.write_api import SYNCHRONOUS
 # -----------------------------------------------------------------------------
 
 # -----------------------------------------------------------------------------
-# Takes the tagset from sm_idbprep() and uses it to build the line protocol
-# output. The line protocol is then passed to push2idb() to be written to
-# InfluxDB
+# Takes serial object, tagset and a location for a buffer file.
+# The sm_idbprep() function is called to obtain the correct timestamp
+# and equipment ID for the current telegram.
+# The line protocol is then passed to push2idb() to be written to InfluxDB
+# -----------------------------------------------------------------------------
 
 def record_readings(serial_obj, tagset, lp_buffer):
     os.system('clear')
@@ -248,5 +250,6 @@ print("Serial port object created.")
 # TODO: If that fails, log the error and continue
 print("Entering main loop.")
 for telegram in serial_reader.read_as_object():
+    print("telegram")
     record_readings(serial_reader, sme_readings, lp_buffer)
 
