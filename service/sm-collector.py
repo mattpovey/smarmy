@@ -63,9 +63,10 @@ def record_readings(serial_obj, tagset, lp_buffer):
 # -----------------------------------------------------------------------------
 def push2idb(lp_out):
     # Server metadata
+    # Note that https:// requires a cert if using local CA
     # TODO: Move this to a config file
     bucket = "sm_collector"
-    url = "influxdb.sys.kyomu.co.uk:8086"
+    url = "https://influxdb.sys.kyomu.co.uk:8086"
     org = "kyomu.co.uk"
     token = "28AWec8baj88R0Do-92VevegExVRDEfs7vQm_Y9xVA4GutIbjcAevmTUVRp3OqrDZWY7SunrFD31-oDqHFvm3A=="
     client = influxdb_client.InfluxDBClient(
