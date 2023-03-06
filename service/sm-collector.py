@@ -61,7 +61,7 @@ def record_readings(tagset, lp_buffer):
                 if push2idb(lp_out) == False:
                     lp_buffer.write(lp_out)
                     lp_buffer.write("\n")
-                    syslog.syslog(syslog.LOG_ERR, "Failed to write to InfluxDB")
+                    syslog.syslog("Failed to write to InfluxDB")
                     #syslog.syslog(syslog.LOG_ERR, lp_out)
                     print("InfluxDB write failed")
                 #else:
@@ -94,7 +94,8 @@ def push2idb(lp_out):
         write_api.write(url=url, bucket=bucket, org=org, record=[lp_out])
         return True
     except Exception as e:
-        syslog.syslog(syslog.LOG_ERR, "Failed to write to InfluxDB", str(e))
+        error = "Failed to write to InfluxDB" + str(e)
+        syslog.syslog(syslog.LOG_ERR, error)
         return False
     
 def p1_listener():
@@ -110,7 +111,7 @@ def p1_listener():
             telegram_specification=telegram_specifications.V5
         )
     except Exception as e:
-        syslog.syslog(syslog.LOG_ERR, "Failed to open serial port.", str(e))
+        syslog.syslog("Failed to open serial port.", str(e))
         print("Failed to open serial port", str(e))
         sys.exit()
 
@@ -237,6 +238,8 @@ sme_readings = {
 # the error to syslog
 print("Smartmeter reader starting.")
 buffer_file = "/var/db/lp_buffer.json"
+syslog.openlog(logoption=syslog.LOG_PID, facility=syslog.LOG_DAEMON)
+
 try:
     print("Testing for buffer file to log data if InfluxDB server is \
         unavailable.")
