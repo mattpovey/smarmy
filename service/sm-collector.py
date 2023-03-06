@@ -76,7 +76,7 @@ def push2idb(lp_out):
     bucket = "sm_collector"
     url = "https://influxdb.sys.kyomu.co.uk:8086"
     org = "kyomu.co.uk"
-    token = "28AWec8baj88R0Do-92VevegExVRDEfs7vQm_Y9xVA4GutIbjcAevmTUVRp3OqrDZWY7SunrFD31-oDqHFvm3A=="
+    token = "!!28AWec8baj88R0Do-92VevegExVRDEfs7vQm_Y9xVA4GutIbjcAevmTUVRp3OqrDZWY7SunrFD31-oDqHFvm3A=="
     client = influxdb_client.InfluxDBClient(
         url=url,
         token=token,
@@ -116,11 +116,10 @@ def p1_listener():
             print(str(getattr(telegram, "P1_MESSAGE_TIMESTAMP").value))
             break
     except Exception as e:
-        error = "Device reports readiness to read but returned no data. \
-            Check whether the port is already in use." + str(e)
+        error = "Could not open serial port" + str(e)
         logError(error, exit=True)
     finally:
-        print("P1 serial connection to smartmeter is avaialble.")
+        print("P1 serial connection to smartmeter is available.")
         return serial_reader
 
 # -----------------------------------------------------------------------------
