@@ -94,7 +94,7 @@ def push2idb(lp_out):
         write_api.write(url=url, bucket=bucket, org=org, record=[lp_out])
         return True
     except Exception as e:
-        syslog.syslog(syslog.LOG_ERR, "Failed to write to InfluxDB", + str(e))
+        syslog.syslog(syslog.LOG_ERR, "Failed to write to InfluxDB", str(e))
         return False
     
 def p1_listener():
@@ -110,8 +110,8 @@ def p1_listener():
             telegram_specification=telegram_specifications.V5
         )
     except Exception as e:
-        syslog.syslog(syslog.LOG_ERR, "Failed to open serial port.", + str(e))
-        print("Failed to open serial port", + str(e))
+        syslog.syslog(syslog.LOG_ERR, "Failed to open serial port.", str(e))
+        print("Failed to open serial port", str(e))
         sys.exit()
 
     try:
@@ -243,8 +243,8 @@ try:
     lp_buffer = open(buffer_file, "a+")
 except Exception as e:
     syslog.syslog("Unable to open /var/db/lp_buffer.json for writing. \
-                    Check permissions." + str(e))
-    print("Unable to open /var/db/lp_buffer.json for writing.", + str(e))
+                    Check permissions." str(e))
+    print("Unable to open /var/db/lp_buffer.json for writing.", str(e))
     sys.exit()
 
 # Create the serial port object
@@ -274,8 +274,8 @@ try:
         record_readings(sme_readings, lp_buffer)
         tel_count += 1
 except Exception as e:
-        syslog.syslog("Error reading telegram: ", + str(e))
+        syslog.syslog("Error reading telegram: ", str(e))
         syslog.syslog("sm-collector.py exiting.")
-        print("Error reading telegram: ", + str(e))
+        print("Error reading telegram: ", str(e))
         print("sm-collector.py exiting.")
         sys.exit()
