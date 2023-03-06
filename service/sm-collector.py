@@ -21,7 +21,7 @@ from influxdb_client.client.write_api import SYNCHRONOUS
 # -----------------------------------------------------------------------------
 
 def record_readings(serial_obj, tagset, lp_buffer):
-    os.system('clear')
+    #os.system('clear')
     sm_ts, sm_gasts, equipment, gas_equipment = sm_idbprep()
 
     for tag_key in tagset:
@@ -52,7 +52,7 @@ def record_readings(serial_obj, tagset, lp_buffer):
                 # If push2idb returns False, write the line to lp_buffer and log
                 # the failure to syslog
 
-                print("Attempting push to InfluxDB...")
+                #print("Attempting push to InfluxDB...")
                 if push2idb(lp_out) == False:
                     lp_buffer.write(lp_out)
                     lp_buffer.write("\n")
