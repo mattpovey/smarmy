@@ -243,7 +243,7 @@ try:
     lp_buffer = open(buffer_file, "a+")
 except Exception as e:
     syslog.syslog("Unable to open /var/db/lp_buffer.json for writing. \
-                    Check permissions." str(e))
+                    Check permissions.", str(e))
     print("Unable to open /var/db/lp_buffer.json for writing.", str(e))
     sys.exit()
 
