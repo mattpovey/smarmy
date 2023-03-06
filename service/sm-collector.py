@@ -51,7 +51,7 @@ def record_readings(serial_obj, tagset, lp_buffer):
                 # the failure to syslog
 
                 if push2idb(lp_out) == False:
-                    lp_buffer.append(lp_out)
+                    lp_buffer.write(lp_out)
                     syslog.syslog(syslog.LOG_ERR, "Failed to write to InfluxDB")
                     syslog.syslog(syslog.LOG_ERR, lp_out)
                     print("InfluxDB write failed")
