@@ -19,7 +19,7 @@ from influxdb_client.client.write_api import SYNCHRONOUS
 # InfluxDB
 
 def record_readings(serial_obj, tagset, lp_buffer):
-    #os.system('clear')
+    os.system('clear')
     sm_ts, sm_gasts, equipment, gas_equipment = sm_idbprep()
     #ilp_list = []
 
@@ -34,7 +34,7 @@ def record_readings(serial_obj, tagset, lp_buffer):
                 msr_record = tagset[tag_key][tag_val][measurement]       
                 this_value = str(getattr(telegram, msr_request).value) 
                 this_unit = str(getattr(telegram, msr_request).unit)
-                # Fix up units
+                # Fix up units - the "none" unit is used for counts
                 if this_unit == "None":
                     this_unit = "Count"
                 # Capture the gas meter number
@@ -56,6 +56,8 @@ def record_readings(serial_obj, tagset, lp_buffer):
                     syslog.syslog(syslog.LOG_ERR, "Failed to write to InfluxDB")
                     #syslog.syslog(syslog.LOG_ERR, lp_out)
                     print("InfluxDB write failed")
+                else:
+                    print("InfluxDB write successful")
 
 # -----------------------------------------------------------------------------
 # Take a line of InfluxDB line protocol and push it to the InfluxDB server
@@ -142,6 +144,7 @@ def sm_idbprep():
     equipment = str(getattr(telegram, elec_equip_id).value)
     gas_equipment = str(getattr(telegram, gas_equip_id).value)
     
+    print("Timestamp of current telegram, fixed by 2hrs is, ", sm_ts)
     return sm_ts, sm_gasts, equipment, gas_equipment
 
 # -----------------------------------------------------------------------------
