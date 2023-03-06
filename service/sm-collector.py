@@ -52,8 +52,9 @@ def record_readings(serial_obj, tagset, lp_buffer):
 
                 if push2idb(lp_out) == False:
                     lp_buffer.write(lp_out)
+                    lp_buffer.write("\n")
                     syslog.syslog(syslog.LOG_ERR, "Failed to write to InfluxDB")
-                    syslog.syslog(syslog.LOG_ERR, lp_out)
+                    #syslog.syslog(syslog.LOG_ERR, lp_out)
                     print("InfluxDB write failed")
 
 # -----------------------------------------------------------------------------
@@ -216,8 +217,9 @@ sme_readings = {
 # If it exists, leave the file handle open, otherwise, create it and write
 # the error to syslog
 
+buffer_file = "/var/db/lp_buffer.json"
 try:
-    lp_buffer = open("lp_buffer.json", "a+")
+    lp_buffer = open(buffer_file, "a+")
 except:
     syslog.syslog("Unable to open /var/db/lp_buffer.json for writing. \
                     Check permissions.")
