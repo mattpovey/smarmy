@@ -94,8 +94,7 @@ def push2idb(lp_out):
         write_api.write(url=url, bucket=bucket, org=org, record=[lp_out])
         return True
     except Exception as e:
-        syslog.syslog(syslog.LOG_ERR, "Failed to write to InfluxDB")
-        print(e)
+        syslog.syslog(syslog.LOG_ERR, "Failed to write to InfluxDB", + str(e)
         return False
     
 def p1_listener():
@@ -106,22 +105,22 @@ def p1_listener():
         serial_reader = SerialReader(
             # TODO: Move this to a config file
             #device='/dev/ttyUSB0',
-            device='/dev/cuaU0',
+            device='/dev/cuaU012',
             serial_settings=SERIAL_SETTINGS_V5,
             telegram_specification=telegram_specifications.V5
         )
     except Exception as e:
-        print("Failed to open serial port. Is the device connected?")
-        print(e)
+        syslog.syslog(syslog.LOG_ERR, "Failed to open serial port.", + str(e))
+        print("Failed to open serial port", + str(e))
         sys.exit()
-
 
     try:
         for telegram in serial_reader.read_as_object():
             print(str(getattr(telegram, "P1_MESSAGE_TIMESTAMP").value))
             break
     except:
-        print("Device reports readiness to read but returned no data. \nCheck whether the port is already in use.")
+        print("Device reports readiness to read but returned no data. \
+              \nCheck whether the port is already in use.")
         sys.exit()
     finally:
         print("P1 serial connection to smartmeter is avaialble.")
@@ -242,10 +241,10 @@ try:
     print("Testing for buffer file to log data if InfluxDB server is \
         unavailable.")
     lp_buffer = open(buffer_file, "a+")
-except:
+except Exception as e:
     syslog.syslog("Unable to open /var/db/lp_buffer.json for writing. \
-                    Check permissions.")
-    print("Unable to open /var/db/lp_buffer.json for writing.")
+                    Check permissions." + str(e))
+    print("Unable to open /var/db/lp_buffer.json for writing.", + str(e))
     sys.exit()
 
 # Create the serial port object
@@ -254,8 +253,12 @@ try:
     print("Creating serial port object.")
     serial_reader = p1_listener()
 except:
-    syslog.syslog("Unable to create serial port object. Check permissions.")
-    print("Unable to create serial port object. Check that it exists.")
+    syslog.syslog("Unable to create serial port object. Check permissions \
+                  and that it is the correct port for this OS.")
+    syslog.syslog("sm-collector.py exiting.")
+    print("Unable to create serial port object. Check permissions \
+                  and that it is the correct port for this OS.")
+    print("sm-collector.py exiting.")
     sys.exit()
 
 print("Serial port object created.")
@@ -268,10 +271,11 @@ try:
     for telegram in serial_reader.read_as_object():
         if tel_count % 1000 == 0:
             syslog.syslog("Read " + str(tel_count) + " telegrams to Influxdb since .")
-
         record_readings(sme_readings, lp_buffer)
         tel_count += 1
 except Exception as e:
         syslog.syslog("Error reading telegram: " + str(e))
+        syslog.syslog("sm-collector.py exiting.")
         print("Error reading telegram: " + str(e))
+        print("sm-collector.py exiting.")
         sys.exit()
