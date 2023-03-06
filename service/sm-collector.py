@@ -18,7 +18,7 @@ from influxdb_client.client.write_api import SYNCHRONOUS
 # output. The line protocol is then passed to push2idb() to be written to
 # InfluxDB
 
-def record_readings(serial_obj, tagset):
+def record_readings(serial_obj, tagset, lp_buffer)):
     #os.system('clear')
     sm_ts, sm_gasts, equipment, gas_equipment = sm_idbprep()
     #ilp_list = []
@@ -89,7 +89,8 @@ def p1_listener():
     # port is in use if it happens to be sending data at that time. 
     serial_reader = SerialReader(
         # TODO: Move this to a config file
-        device='/dev/ttyUSB0',
+        #device='/dev/ttyUSB0',
+        device='/dev/cuaU0',
         serial_settings=SERIAL_SETTINGS_V5,
         telegram_specification=telegram_specifications.V5
     )
@@ -228,5 +229,5 @@ serial_reader = p1_listener()
 # TODO: Every hour, attempt to push the contents of lp_buffer.json to InfluxDB
 # TODO: If that fails, log the error and continue
 for telegram in serial_reader.read_as_object():
-    record_readings(serial_reader, sme_readings)
+    record_readings(serial_reader, sme_readings, lp_buffer)
 
