@@ -94,7 +94,7 @@ def push2idb(lp_out):
         write_api.write(url=url, bucket=bucket, org=org, record=[lp_out])
         return True
     except Exception as e:
-        syslog.syslog(syslog.LOG_ERR, "Failed to write to InfluxDB", + str(e)
+        syslog.syslog(syslog.LOG_ERR, "Failed to write to InfluxDB", + str(e))
         return False
     
 def p1_listener():
