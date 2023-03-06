@@ -267,5 +267,10 @@ tel_count = 0
 for telegram in serial_reader.read_as_object():
     if tel_count % 1000 == 0:
         syslog.syslog("Read " + str(tel_count) + " telegrams to Influxdb since .")
-    record_readings(sme_readings, lp_buffer)
-    tel_count += 1
+    try:
+        record_readings(sme_readings, lp_buffer)
+        tel_count += 1
+    except Exception as e:
+        syslog.syslog("Error reading telegram: " + str(e))
+        print("Error reading telegram: " + str(e))
+        sys.exit()
