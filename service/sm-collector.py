@@ -82,8 +82,7 @@ def push2idb(lp_out):
         return True
     except:
         return False
-
-
+    
 def p1_listener():
     # It is probably not useful to test whether the port is in use since the dsmr
     # library does not seem to hold a connection. It will only report that the 
