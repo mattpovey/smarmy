@@ -24,7 +24,7 @@ from influxdb_client.client.write_api import SYNCHRONOUS
 # -----------------------------------------------------------------------------
 
 def record_readings(tagset, lp_buffer):
-    #os.system('clear')
+    os.system('clear')
     sm_ts, sm_gasts, equipment, gas_equipment = sm_idbprep()
 
     # Iterate through the tagset getting the data from the current telegram
@@ -229,6 +229,15 @@ sme_readings = {
         }
 }
 
+def logError(error, exit=False):
+    syslog.syslog(error)
+    print(error)
+    if exit:
+        syslog.syslog("sm-collector.py exiting.")
+        print("sm-collector.py exiting.")
+        sys.exit()
+
+
 # -----------------------------------------------------------------------------
 # MAIN
 # -----------------------------------------------------------------------------
@@ -280,8 +289,5 @@ try:
         record_readings(sme_readings, lp_buffer)
         tel_count += 1
 except Exception as e:
-        syslog.syslog("Error reading telegram: ", str(e))
-        syslog.syslog("sm-collector.py exiting.")
-        print("Error reading telegram: ", str(e))
-        print("sm-collector.py exiting.")
-        sys.exit()
+        error = "Error reading telegram: " + str(e)
+        logError(error, exit=True)
