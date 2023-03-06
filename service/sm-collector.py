@@ -62,8 +62,6 @@ def record_readings(tagset, lp_buffer):
                 #print("Attempting push to InfluxDB...")
                 push2idb(lp_out)
 
-
-
 # -----------------------------------------------------------------------------
 # Take a line of InfluxDB line protocol and push it to the InfluxDB server.
 # Return True if successful, False if not.
@@ -76,7 +74,7 @@ def push2idb(lp_out):
     bucket = "sm_collector"
     url = "https://influxdb.sys.kyomu.co.uk:8086"
     org = "kyomu.co.uk"
-    token = "!!28AWec8baj88R0Do-92VevegExVRDEfs7vQm_Y9xVA4GutIbjcAevmTUVRp3OqrDZWY7SunrFD31-oDqHFvm3A=="
+    token = "28AWec8baj88R0Do-92VevegExVRDEfs7vQm_Y9xVA4GutIbjcAevmTUVRp3OqrDZWY7SunrFD31-oDqHFvm3A=="
     client = influxdb_client.InfluxDBClient(
         url=url,
         token=token,
@@ -224,7 +222,12 @@ sme_readings = {
         }
 }
 
+# -----------------------------------------------------------------------------
+# Consolidate syslog loggin in a function
+# TODO: Add a facility to the function
+# -----------------------------------------------------------------------------
 def logError(error, exit=False):
+    syslog.openlog(logoption=syslog.LOG_PID, facility=syslog.LOG_DAEMON)
     syslog.syslog(error)
     print(error)
     if exit:
@@ -242,7 +245,6 @@ def logError(error, exit=False):
 # the error to syslog
 print("Smartmeter reader starting.")
 buffer_file = "/var/db/lp_buffer.json"
-syslog.openlog(logoption=syslog.LOG_PID, facility=syslog.LOG_DAEMON)
 
 try:
     print("Testing for buffer file to log data if InfluxDB server is \
@@ -271,8 +273,9 @@ print("Serial port object created.")
 tel_count = 0
 try:
     for telegram in serial_reader.read_as_object():
-        if tel_count % 1000 == 0:
-            syslog.syslog("Read " + str(tel_count) + " telegrams to Influxdb since .")
+        if tel_count % 10 == 0:
+            progress_message = "Read " + str(tel_count) + " telegrams to Influxdb")
+            syslog.syslog(syslog.LOG_INFO, progress_message)
         record_readings(sme_readings, lp_buffer)
         tel_count += 1
 except Exception as e:
