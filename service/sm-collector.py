@@ -59,8 +59,8 @@ def record_readings(serial_obj, tagset, lp_buffer):
                     syslog.syslog(syslog.LOG_ERR, "Failed to write to InfluxDB")
                     #syslog.syslog(syslog.LOG_ERR, lp_out)
                     print("InfluxDB write failed")
-                else:
-                    print("InfluxDB write successful")
+                #else:
+                    #print("InfluxDB write successful")
 
 # -----------------------------------------------------------------------------
 # Take a line of InfluxDB line protocol and push it to the InfluxDB server
@@ -147,7 +147,7 @@ def sm_idbprep():
     equipment = str(getattr(telegram, elec_equip_id).value)
     gas_equipment = str(getattr(telegram, gas_equip_id).value)
     
-    print("Timestamp of current telegram, fixed by 2hrs is, ", sm_ts)
+    print("Timestamp of current telegram, fixed by 2hrs is, ", (str(getattr(telegram, elec_ts).value)))
     return sm_ts, sm_gasts, equipment, gas_equipment
 
 # -----------------------------------------------------------------------------
@@ -250,6 +250,6 @@ print("Serial port object created.")
 # TODO: If that fails, log the error and continue
 print("Entering main loop.")
 for telegram in serial_reader.read_as_object():
-    print("telegram")
+    print(telegram)
     record_readings(serial_reader, sme_readings, lp_buffer)
 
