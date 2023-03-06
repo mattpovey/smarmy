@@ -14,7 +14,8 @@ from influxdb_client.client.write_api import SYNCHRONOUS
 # -----------------------------------------------------------------------------
 
 # -----------------------------------------------------------------------------
-# Takes serial object, tagset and a location for a buffer file.
+# Uses the current telegram (does not need to be passed), tagset and a location 
+# for a buffer file.
 # The sm_idbprep() function is called to obtain the correct timestamp
 # and equipment ID for the current telegram.
 # The line protocol is then passed to push2idb() to be written to InfluxDB
@@ -24,6 +25,8 @@ def record_readings(tagset, lp_buffer):
     #os.system('clear')
     sm_ts, sm_gasts, equipment, gas_equipment = sm_idbprep()
 
+    # Iterate through the tagset getting the data from the current telegram
+    # for each measurement and iteratively building the line protocol output
     for tag_key in tagset:
         this_tag_key = tag_key
         for tag_val in tagset[tag_key].keys():
@@ -51,6 +54,8 @@ def record_readings(tagset, lp_buffer):
                 # Attempt to push the line protocol to InfluxDB
                 # If push2idb returns False, write the line to lp_buffer and log
                 # the failure to syslog
+                # TODO: Batch this using write_points and a buffer array
+                # TODO: The whole array can be dumped to the buffer file it it fails
 
                 #print("Attempting push to InfluxDB...")
                 if push2idb(lp_out) == False:
@@ -63,9 +68,9 @@ def record_readings(tagset, lp_buffer):
                     #print("InfluxDB write successful")
 
 # -----------------------------------------------------------------------------
-# Take a line of InfluxDB line protocol and push it to the InfluxDB server
-# Return True if successful, False if not
-# Fail gracefully if the server is not available
+# Take a line of InfluxDB line protocol and push it to the InfluxDB server.
+# Return True if successful, False if not.
+# TODO: Report error if the server is not available.
 # -----------------------------------------------------------------------------
 def push2idb(lp_out):
     # Server metadata
@@ -81,33 +86,40 @@ def push2idb(lp_out):
         org=org
     )
 
-    # Try to write the data to InfluxDB
-    # Return True if successful, False if not
+    # Try to write the data to InfluxDB.
+    # Return True if successful. If the write fails, try to log the error and
+    # return False
     try:
         write_api = client.write_api(write_options=SYNCHRONOUS)
         write_api.write(url=url, bucket=bucket, org=org, record=[lp_out])
         return True
     except:
-        return False
+
+
     
 def p1_listener():
     # It is probably not useful to test whether the port is in use since the dsmr
     # library does not seem to hold a connection. It will only report that the 
     # port is in use if it happens to be sending data at that time. 
-    serial_reader = SerialReader(
-        # TODO: Move this to a config file
-        #device='/dev/ttyUSB0',
-        device='/dev/cuaU0',
-        serial_settings=SERIAL_SETTINGS_V5,
-        telegram_specification=telegram_specifications.V5
-    )
+    try:
+        serial_reader = SerialReader(
+            # TODO: Move this to a config file
+            #device='/dev/ttyUSB0',
+            device='/dev/cuaU0',
+            serial_settings=SERIAL_SETTINGS_V5,
+            telegram_specification=telegram_specifications.V5
+        )
+    except Exception as e:
+        print(e)
+        sys.exit()
 
     try:
         for telegram in serial_reader.read_as_object():
             print(str(getattr(telegram, "P1_MESSAGE_TIMESTAMP").value))
             break
     except:
-        print("Device reports readiness to read but returned no data. \nCheck whether the port is already in use.")
+        print("Device reports readiness to read but returned no data. \nCheck \
+               whether the port is already in use.")
         sys.exit()
     finally:
         print("P1 serial connection to smartmeter is avaialble.")
@@ -222,10 +234,12 @@ sme_readings = {
 # Attempt to open lp_buffer.json
 # If it exists, leave the file handle open, otherwise, create it and write
 # the error to syslog
-print("Hello")
+print("Smartmeter reader starting.")
 buffer_file = "/var/db/lp_buffer.json"
+
 try:
-    print("Testing for buffer file.")
+    print("Testing for buffer file to log data if InfluxDB server is \
+          unavailable.")
     lp_buffer = open(buffer_file, "a+")
 except:
     syslog.syslog("Unable to open /var/db/lp_buffer.json for writing. \
@@ -234,7 +248,6 @@ except:
     sys.exit()
 
 # Create the serial port object
-
 try:
     print("Creating serial port object.")
     serial_reader = p1_listener()
@@ -245,10 +258,12 @@ except:
 
 print("Serial port object created.")
 
-# Loop forever reading telegrams
-# TODO: Every hour, attempt to push the contents of lp_buffer.json to InfluxDB
-# TODO: If that fails, log the error and continue
-print("Entering main loop.")
+# Loop forever reading telegrams 
+# Every 1000 telegrams, write a lot entry to syslog with the time and number
+# of telegrams read
+tel_count = 0
 for telegram in serial_reader.read_as_object():
+    if tel_count % 1000 == 0:
+        syslog.syslog("Read " + str(tel_count) + " telegrams to Influxdb since .")
     record_readings(sme_readings, lp_buffer)
-
+    tel_count += 1
