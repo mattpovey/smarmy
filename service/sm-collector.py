@@ -217,7 +217,7 @@ sme_readings = {
 try:
     lp_buffer = open("lp_buffer.json", "a+")
 except:
-    syslog.syslog("Unable to open /var/db/lp_buffer.json for writing. /
+    syslog.syslog("Unable to open /var/db/lp_buffer.json for writing. \
                     Check permissions.")
     sys.exit()
 
@@ -229,5 +229,4 @@ serial_reader = p1_listener()
 # TODO: If that fails, log the error and continue
 for telegram in serial_reader.read_as_object():
     record_readings(serial_reader, sme_readings)
-    serial_reader.
 
