@@ -79,7 +79,7 @@ def push2idb(lp_out):
     bucket = "sm_collector"
     url = "https://influxdb.sys.kyomu.co.uk:8086"
     org = "kyomu.co.uk"
-    token = "28AWec8baj88R0Do-92VevegExVRDEfs7vQm_Y9xVA4GutIbjcAevmTUVRp3OqrDZWY7SunrFD31-oDqHFvm3A=="
+    token = "!!28AWec8baj88R0Do-92VevegExVRDEfs7vQm_Y9xVA4GutIbjcAevmTUVRp3OqrDZWY7SunrFD31-oDqHFvm3A=="
     client = influxdb_client.InfluxDBClient(
         url=url,
         token=token,
@@ -105,7 +105,7 @@ def p1_listener():
         serial_reader = SerialReader(
             # TODO: Move this to a config file
             #device='/dev/ttyUSB0',
-            device='/dev/cuaU012',
+            device='/dev/cuaU0',
             serial_settings=SERIAL_SETTINGS_V5,
             telegram_specification=telegram_specifications.V5
         )
