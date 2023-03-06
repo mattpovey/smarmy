@@ -18,7 +18,7 @@ from influxdb_client.client.write_api import SYNCHRONOUS
 # output. The line protocol is then passed to push2idb() to be written to
 # InfluxDB
 
-def record_readings(serial_obj, tagset, lp_buffer)):
+def record_readings(serial_obj, tagset, lp_buffer):
     #os.system('clear')
     sm_ts, sm_gasts, equipment, gas_equipment = sm_idbprep()
     #ilp_list = []
