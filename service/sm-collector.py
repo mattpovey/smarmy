@@ -65,9 +65,9 @@ def push2idb(lp_out):
     # Server metadata
     # TODO: Move this to a config file
     bucket = "sm_collector"
-    url = "http://127.0.0.1:8086"
+    url = "influxdb.sys.kyomu.co.uk:8086"
     org = "kyomu.co.uk"
-    token = "nCZ83rEOWe1Cp2rkH3N9GkS5rpOuyfNy8StfXhjDYfFxmY6BB84ofkFWw-4_BD3D2iAzzoM76KpvFzs2ubSWZA=="
+    token = "28AWec8baj88R0Do-92VevegExVRDEfs7vQm_Y9xVA4GutIbjcAevmTUVRp3OqrDZWY7SunrFD31-oDqHFvm3A=="
     client = influxdb_client.InfluxDBClient(
         url=url,
         token=token,
