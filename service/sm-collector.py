@@ -1,3 +1,9 @@
+# Author: Matthew Povey
+# Date: 2023-03-07
+# Script to read smartmeter data from a P1 port of the ISKRA AM550 smartmeter
+# and write it to InfluxDB in a sensible format. Data can be visualized
+# using Grafan or in the InfluxDB UI directly.
+
 from dsmr_parser import telegram_specifications
 from dsmr_parser.clients import SerialReader, SERIAL_SETTINGS_V5
 import os, os.path 
@@ -7,9 +13,6 @@ import influxdb_client
 import sys
 import syslog
 from influxdb_client.client.write_api import SYNCHRONOUS
-
-# TODO: Create a function to handle all syslog logging and pass it an error
-#       message and a log level
 
 # -----------------------------------------------------------------------------
 # FUNCTION DEFINITIONS
@@ -64,8 +67,6 @@ def record_readings(tagset, lp_buffer):
 
 # -----------------------------------------------------------------------------
 # Take a line of InfluxDB line protocol and push it to the InfluxDB server.
-# Return True if successful, False if not.
-# TODO: Report error if the server is not available.
 # -----------------------------------------------------------------------------
 def push2idb(lp_out):
     # Server metadata
@@ -82,8 +83,12 @@ def push2idb(lp_out):
     )
 
     # Try to write the data to InfluxDB.
-    # Return True if successful. If the write fails, try to log the error and
-    # return False
+    # If the write fails, write the line protocol to the buffer file for later
+    # processing and continue.
+    # TODO: Batch this using write_points and a buffer array
+    #       The whole array can be dumped to the buffer file it it fails
+    #       Code to push the contents of the file to InfuxDB when the server
+    #       comes back online
     try:
         write_api = client.write_api(write_options=SYNCHRONOUS)
         write_api.write(url=url, bucket=bucket, org=org, record=[lp_out])
@@ -93,6 +98,9 @@ def push2idb(lp_out):
         lp_buffer.write("\n")
         logError(error, exit=False)
     
+# -----------------------------------------------------------------------------
+# Configure the listener and return the serial reader object
+# -----------------------------------------------------------------------------
 def p1_listener():
     # It is probably not useful to test whether the port is in use since the dsmr
     # library does not seem to hold a connection. It will only report that the 
@@ -225,8 +233,8 @@ sme_readings = {
 }
 
 # -----------------------------------------------------------------------------
-# Consolidate syslog loggin in a function
-# TODO: Add a facility
+# Consolidate syslog in a function
+# TODO: Make the facility an argument
 # -----------------------------------------------------------------------------
 def logError(error, exit=False):
     syslog.openlog(logoption=syslog.LOG_PID, facility=syslog.LOG_DAEMON)
@@ -283,3 +291,6 @@ try:
 except Exception as e:
         error = "Error reading telegram: " + str(e)
         logError(error, exit=True)
+except KeyboardInterrupt:
+    print("Keyboard interrupt. Exiting.")
+    sys.exit()
