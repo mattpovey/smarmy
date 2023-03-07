@@ -54,7 +54,7 @@ def record_readings(tagset, lp_buffer):
                 tag_set = "MeterID" + "=" + equipment + "," + this_tag_key + "=" + this_tag_val
                 lp_out = msr_record + "," + tag_set + " " + fields + " " + sm_ts
                 #print(lp_out)
-                print("LP Prepared...")
+                #print("LP Prepared...")
 
                 # Attempt to push the line protocol to InfluxDB
                 # If push2idb returns False, write the line to lp_buffer and log
@@ -63,12 +63,12 @@ def record_readings(tagset, lp_buffer):
                 # TODO: The whole array can be dumped to the buffer file it it fails
 
                 #print("Attempting push to InfluxDB...")
-                push2idb(lp_out)
+                push2idb(lp_out, lp_buffer)
 
 # -----------------------------------------------------------------------------
 # Take a line of InfluxDB line protocol and push it to the InfluxDB server.
 # -----------------------------------------------------------------------------
-def push2idb(lp_out):
+def push2idb(lp_out, lp_buffer):
     # Server metadata
     # Note that https:// requires a cert if using local CA
     # TODO: Move this to a config file
