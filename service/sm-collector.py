@@ -123,7 +123,7 @@ def p1_listener():
 # -----------------------------------------------------------------------------
 # sm_idbprep() - Prepare the data for InfluxDB
 # Configures the tagset (InfluxDB schema equivalent) and returns four values
-# that are used in the line protocol output
+# that are used to generate the line protocol output
 # -----------------------------------------------------------------------------
 def sm_idbprep():
 
@@ -141,6 +141,8 @@ def sm_idbprep():
 
     # Adding 2 hours to the timestamps to account for the clock on the meter
     # being wrong. This will break when SummerTime ends...
+    # 20230328 - This might actually be the dsmr_parser library since it appears
+    # to be using the time in Amsterdam rather than UTC.
 
     sm_ts = (str(getattr(telegram, elec_ts).value))
     sm_ts = time.strptime(sm_ts, '%Y-%m-%d %H:%M:%S%z') 
@@ -224,7 +226,7 @@ sme_readings = {
 
 # -----------------------------------------------------------------------------
 # Consolidate syslog loggin in a function
-# TODO: Add a facility to the function
+# TODO: Add a facility
 # -----------------------------------------------------------------------------
 def logError(error, exit=False):
     syslog.openlog(logoption=syslog.LOG_PID, facility=syslog.LOG_DAEMON)
@@ -273,8 +275,8 @@ print("Serial port object created.")
 tel_count = 0
 try:
     for telegram in serial_reader.read_as_object():
-        if tel_count % 10 == 0:
-            progress_message = "Read " + str(tel_count) + " telegrams to Influxdb"
+        if tel_count % 1000 == 0:
+            progress_message = "Read " + str(tel_count) + " telegrams to Influxdb since startup"
             syslog.syslog(syslog.LOG_INFO, progress_message)
         record_readings(sme_readings, lp_buffer)
         tel_count += 1
