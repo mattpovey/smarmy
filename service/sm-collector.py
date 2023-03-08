@@ -53,7 +53,7 @@ def record_readings(tagset, lp_buffer):
                 # Build the line protocol output
                 tag_set = "MeterID" + "=" + equipment + "," + this_tag_key + "=" + this_tag_val
                 lp_out = msr_record + "," + tag_set + " " + fields + " " + sm_ts
-                #print(lp_out)
+                print(lp_out)
                 #print("LP Prepared...")
 
                 # Attempt to push the line protocol to InfluxDB
