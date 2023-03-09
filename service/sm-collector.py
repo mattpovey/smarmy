@@ -27,7 +27,7 @@ from influxdb_client.client.write_api import SYNCHRONOUS
 # -----------------------------------------------------------------------------
 
 def record_readings(tagset, lp_buffer):
-    os.system('clear')
+    #os.system('clear')
     sm_ts, sm_gasts, equipment, gas_equipment = sm_idbprep()
 
     # Iterate through the tagset getting the data from the current telegram
