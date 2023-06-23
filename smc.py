@@ -28,15 +28,15 @@ config = configparser.ConfigParser()
 config.read('smc.ini')
 
 # InfluxDB configuration
-bucket=config['InfluxDB']['bucket'],
-url=config['InfluxDB']['url'],
-token=config['InfluxDB']['token'],
-org=config['InfluxDB']['org']
+bucket_conf=config['InfluxDB']['bucket'],
+url_conf=config['InfluxDB']['url'],
+token_conf=config['InfluxDB']['token'],
+org_conf=config['InfluxDB']['org']
 
 # SerialPort configuration
-device=config['DSMR_Parser']['device'],
-serial_settings=config['DSMR_Parser']['serial_settings'],
-telegram_specification=config['DSMR_Parser']['telegram_specification'],
+device_conf=config['DSMR_Parser']['device'],
+serial_settings_conf=config['DSMR_Parser']['serial_settings'],
+telegram_specification_conf=config['DSMR_Parser']['telegram_specification'],
 
 # -----------------------------------------------------------------------------
 # Uses the current telegram (does not need to be passed), tagset and the 
@@ -46,8 +46,8 @@ telegram_specification=config['DSMR_Parser']['telegram_specification'],
 # The line protocol for this telegram is returned. 
 # -----------------------------------------------------------------------------
 
-def record_readings(tagset, lp_buffer):
-    sm_ts, sm_gasts, equipment, gas_equipment = sm_idbprep()
+def record_readings(tagset, lp_buffer, telegram):
+    sm_ts, sm_gasts, equipment, gas_equipment = sm_idbprep(telegram)
     lp_batch = []
 
     for tag_key in tagset:
@@ -79,10 +79,10 @@ def push2idb(lp_accumulator, lp_buffer, telegram):
     # Server metadata
     # Note that https:// requires a cert if using local CA
     client = influxdb_client.InfluxDBClient(
-        bucket=bucket,
-        url=url,
-        token=token,
-        org=org,
+        bucket=config['InfluxDB']['bucket'],
+        url=config['InfluxDB']['url'],
+        token=config['InfluxDB']['token'],
+        org=config['InfluxDB']['org']
     )
 
     # Try to write the data to InfluxDB.
@@ -91,14 +91,14 @@ def push2idb(lp_accumulator, lp_buffer, telegram):
     for lp_out in lp_accumulator:
         try:
             write_api = client.write_api(write_options=SYNCHRONOUS)
-            write_api.write(url=url, bucket=bucket, org=org, record=lp_accumulator)
-            return len(lp_accumulator)
+            write_api.write(url=config['InfluxDB']['url'], bucket=config['InfluxDB']['bucket'], org=config['InfluxDB']['org'], record=lp_out)
+            print(f"Successfully wrote {lp_out} to InfluxDB.")
         except Exception as e:
             error = "Failed to write to InfluxDB" + str(e)
             lp_buffer.write(lp_out)
             lp_buffer.write("\n")
             logError(error, exit=False)
-    
+    return len(lp_accumulator)
 # -----------------------------------------------------------------------------
 # Configure the listener and return the serial reader object
 # -----------------------------------------------------------------------------
@@ -107,16 +107,19 @@ def p1_listener():
     # library does not seem to hold a connection. It will only report that the 
     # port is in use if it happens to be sending data at that time. 
     try:
+        print(f"Creating serial object with the following options: device={device_conf}, serial_settings={serial_settings_conf}, telegram_specification={telegram_specification_conf}")
         serial_reader = SerialReader(
-            device=device,
-            serial_settings=serial_settings,
-            telegram_specification=telegram_specification,
+            device='/dev/cuaU0',
+            serial_settings=SERIAL_SETTINGS_V5,
+            telegram_specification=telegram_specifications.V5
         )
     except Exception as e:
         error = "Failed to open serial port.", str(e)
+        print(error)
         logError(error, exit=True)
 
     try:
+        print("Testing serial connection to smartmeter.")
         for telegram in serial_reader.read_as_object():
             print(str(getattr(telegram, "P1_MESSAGE_TIMESTAMP").value))
             break
@@ -134,7 +137,7 @@ def p1_listener():
 # DSMR_Parser turns the telegram into an object with properties that can be
 # accessed by name.
 # -----------------------------------------------------------------------------
-def sm_idbprep():
+def sm_idbprep(telegram):
 
     # The Gas timestamp comes from the HOURLY_GAS_METER_READING.datetime property
     # Metadata to select readings
@@ -251,11 +254,11 @@ def main():
 
     try:
         print("Testing for buffer file to log data if InfluxDB server is \
-            unavailable.")
+unavailable.")
         lp_buffer = open(buffer_file, "a+")
     except Exception as e:
         error = "Unable to open " + buffer_file + " for writing. Check \
-                permissions." + str(e)
+permissions." + str(e)
         logError(error, exit=True)
 
     # Create the serial port object
@@ -265,7 +268,7 @@ def main():
         serial_reader = p1_listener()
     except Exception as e:
         error = "Unable to create serial port object. Check permissions \
-                and that it is the correct port for this OS." + str(e)
+and that it is the correct port for this OS." + str(e)
         logError(error, exit=True)
 
     print("Serial port object created.")
@@ -283,7 +286,7 @@ def main():
                 progress_message = "Read " + str(tel_count) + " telegrams to Influxdb since startup"
                 syslog.syslog(syslog.LOG_INFO, progress_message)
 
-            lp_accumulator.extend([record_readings(sme_readings, lp_buffer)])
+            lp_accumulator.extend([record_readings(sme_readings, lp_buffer, telegram)])
             tel_count += 1
 
             if len(lp_accumulator) >= BATCH_SIZE:
