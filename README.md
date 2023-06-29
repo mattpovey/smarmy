@@ -9,6 +9,8 @@ Script to read data from a P1 port of the ISKRA AM550 smartmeter. Data from the 
 - Access to an InfluxDB server or InfluxDB cloud instance
 - (Optional) Access to a Grafana server for visualization, however, basic visualization is available in InfluxDB.
 
+![Sample Grafana Dashboard](images/grafana.png)
+
 ## InfluxDB Setup
 
 This script supports both a local InfluxDB instance or the InfluxDB SaaS. To get started with InfluxDB, follow the instructions on their [official documentation](https://docs.influxdata.com/influxdb/v2.0/get-started/).
