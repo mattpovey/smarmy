@@ -1,4 +1,4 @@
 .vscode/
-env/
-wip/
-service/
+env
+wip
+service
