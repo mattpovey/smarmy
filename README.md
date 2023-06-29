@@ -77,7 +77,7 @@ rc_bg=YES
 
 rc_cmd $1
 ```
-The script writes an entry to syslog every 
+The script writes an entry to syslog every 'report_interval' telegrams.
 ## Notes
 
 - This script uses the dsmr_parser library to parse the smartmeter data. Ensure that the correct telegram specification for your meter is imported.
