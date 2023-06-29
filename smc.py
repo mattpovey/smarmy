@@ -12,6 +12,7 @@
 # visualisation is available in InfluxDB
 
 from dsmr_parser import telegram_specifications
+# This import should be updated for meter type. See the dsmr_parser github
 from dsmr_parser.clients import SerialReader, SERIAL_SETTINGS_V5
 import os, os.path 
 import time
@@ -26,17 +27,6 @@ import configparser
 # Read configuration file
 config = configparser.ConfigParser()
 config.read('smc.ini')
-
-# InfluxDB configuration
-bucket_conf=config['InfluxDB']['bucket'],
-url_conf=config['InfluxDB']['url'],
-token_conf=config['InfluxDB']['token'],
-org_conf=config['InfluxDB']['org']
-
-# SerialPort configuration
-device_conf=config['DSMR_Parser']['device'],
-serial_settings_conf=config['DSMR_Parser']['serial_settings'],
-telegram_specification_conf=config['DSMR_Parser']['telegram_specification'],
 
 # -----------------------------------------------------------------------------
 # Uses the current telegram (does not need to be passed), tagset and the 
@@ -92,13 +82,15 @@ def push2idb(lp_accumulator, lp_buffer, telegram):
         try:
             write_api = client.write_api(write_options=SYNCHRONOUS)
             write_api.write(url=config['InfluxDB']['url'], bucket=config['InfluxDB']['bucket'], org=config['InfluxDB']['org'], record=lp_out)
-            print(f"Successfully wrote {lp_out} to InfluxDB.")
+            # print(f"Successfully wrote {lp_out} to InfluxDB.")
         except Exception as e:
-            error = "Failed to write to InfluxDB" + str(e)
+            error = "Failed to write to InfluxDB: " + str(e)
             lp_buffer.write(lp_out)
             lp_buffer.write("\n")
-            logError(error, exit=False)
+            logMsg(error, exit=False)
+    logMsg(f"Wrote {len(lp_accumulator)} records to InfluxDB bucket, {config['InfluxDB']['bucket']}.")
     return len(lp_accumulator)
+
 # -----------------------------------------------------------------------------
 # Configure the listener and return the serial reader object
 # -----------------------------------------------------------------------------
@@ -106,17 +98,22 @@ def p1_listener():
     # It is probably not useful to test whether the port is in use since the dsmr
     # library does not seem to hold a connection. It will only report that the 
     # port is in use if it happens to be sending data at that time. 
+
     try:
-        print(f"Creating serial object with the following options: device={device_conf}, serial_settings={serial_settings_conf}, telegram_specification={telegram_specification_conf}")
+        # Update for serial port configuration and meter type
+        # See imports for serial_settings and telegram_specifications
         serial_reader = SerialReader(
-            device='/dev/cuaU0',
-            serial_settings=SERIAL_SETTINGS_V5,
-            telegram_specification=telegram_specifications.V5
+            device = '/dev/cuaU0',
+            serial_settings = SERIAL_SETTINGS_V5,
+            telegram_specification = telegram_specifications.V5
         )
+
     except Exception as e:
         error = "Failed to open serial port.", str(e)
         print(error)
-        logError(error, exit=True)
+        logMsg(error, exit=True)
+    
+    print(f"Created serial object with the following options: {serial_reader}")
 
     try:
         print("Testing serial connection to smartmeter.")
@@ -125,7 +122,7 @@ def p1_listener():
             break
     except Exception as e:
         error = "Could not open serial port" + str(e)
-        logError(error, exit=True)
+        logMsg(error, exit=True)
     finally:
         print("P1 serial connection to smartmeter is available.")
         return serial_reader
@@ -151,9 +148,9 @@ def sm_idbprep(telegram):
     # collected each hour
 
     # Adding 2 hours to the timestamps to account for the clock on the meter
-    # being wrong. This will break when SummerTime ends...
-    # 20230328 - This might actually be the dsmr_parser library since it appears
-    # to be using the time in Amsterdam rather than UTC.
+    # being wrong. This may break when SummerTime ends...
+    # 20230328 - Not sure if it's the meter that's in Amsterdam time or 
+    # the meter reader. Either way, this makes the timestamp UTC.
 
     sm_ts = (str(getattr(telegram, elec_ts).value))
     sm_ts = time.strptime(sm_ts, '%Y-%m-%d %H:%M:%S%z') 
@@ -236,10 +233,10 @@ sme_readings = {
 }
 
 # Logging
-def logError(error, exit=False):
+def logMsg(message, exit=False):
     syslog.openlog(logoption=syslog.LOG_PID, facility=syslog.LOG_DAEMON)
-    syslog.syslog(error)
-    print(error)
+    syslog.syslog(message)
+    print(message)
     if exit:
         syslog.syslog("sm-collector.py exiting.")
         print("sm-collector.py exiting.")
@@ -249,6 +246,7 @@ def main():
     # Attempt to open lp_buffer.json
     # If it exists, leave the file handle open, otherwise, create it and write
     # the error to syslog
+    # TODO: Need a sensible way of pushing accumulated buffer data to InfluxDB
     print("Smartmeter reader starting.")
     buffer_file = "/var/db/lp_buffer.json"
 
@@ -259,17 +257,16 @@ unavailable.")
     except Exception as e:
         error = "Unable to open " + buffer_file + " for writing. Check \
 permissions." + str(e)
-        logError(error, exit=True)
+        logMsg(error, exit=True)
 
     # Create the serial port object
-
     try:
         print("Creating serial port object.")
         serial_reader = p1_listener()
     except Exception as e:
         error = "Unable to create serial port object. Check permissions \
 and that it is the correct port for this OS." + str(e)
-        logError(error, exit=True)
+        logMsg(error, exit=True)
 
     print("Serial port object created.")
 
@@ -292,15 +289,15 @@ and that it is the correct port for this OS." + str(e)
             if len(lp_accumulator) >= BATCH_SIZE:
                 try:
                     num_pushed = push2idb(lp_accumulator, lp_buffer, telegram)
-                    print(f"Pushed {num_pushed} lines to InfluxDB.")
+                    # print("Pushed " + str(num_pushed) + " records to InfluxDB.")
                     lp_accumulator.clear()
                 except Exception as e:
                     error = "Error pushing data to InfluxDB: " + str(e)
-                    logError(error, exit=False)
+                    logMsg(error, exit=False)
                     print("Continuing data collection.")
     except Exception as e:
         error = "Error reading telegram: " + str(e)
-        logError(error, exit=True)
+        logMsg(error, exit=True)
     except KeyboardInterrupt:
         print("Keyboard interrupt. Exiting.")
         sys.exit()
