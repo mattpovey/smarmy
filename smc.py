@@ -160,7 +160,7 @@ def sm_idbprep(telegram):
     sm_gasts = time.strptime(sm_gasts, '%Y-%m-%d %H:%M:%S%z')
     sm_gasts = str(time.mktime(sm_gasts) + 6400 )[:-2] + "000000000"
 
-    # Breaks for gas currently...
+    # Equipment IDs - Gas has a different meter number. 
     equipment = str(getattr(telegram, elec_equip_id).value)
     gas_equipment = str(getattr(telegram, gas_equip_id).value)
     
@@ -273,20 +273,21 @@ and that it is the correct port for this OS." + str(e)
     # Loop forever reading telegrams 
     # Every 1000 telegrams, write a lot entry to syslog with the time and number
     # of telegrams read
-    BATCH_SIZE = 10
+    batch_size = 10
+    report_interval = 1000
     tel_count = 0
     lp_accumulator = []
 
     try:
         for telegram in serial_reader.read_as_object():
-            if tel_count % 10000 == 0:
+            if tel_count % report_interval == 0:
                 progress_message = "Read " + str(tel_count) + " telegrams to Influxdb since startup"
                 syslog.syslog(syslog.LOG_INFO, progress_message)
 
             lp_accumulator.extend([record_readings(sme_readings, lp_buffer, telegram)])
             tel_count += 1
 
-            if len(lp_accumulator) >= BATCH_SIZE:
+            if len(lp_accumulator) >= batch_size:
                 try:
                     num_pushed = push2idb(lp_accumulator, lp_buffer, telegram)
                     # print("Pushed " + str(num_pushed) + " records to InfluxDB.")
