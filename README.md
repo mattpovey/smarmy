@@ -11,6 +11,26 @@ Script to read data from a P1 port of the ISKRA AM550 smartmeter. Data from the 
 
 ![Sample Grafana Dashboard](images/grafana.png)
 
+## Flow
+
+```mermaid
+sequenceDiagram
+participant C as Config
+participant P1L as P1 Listener
+participant R as Record Readings
+participant P2I as Push to InfluxDB
+participant M as Main
+
+M->>C: Read configuration file
+Note over M: Create a buffer file for storing data
+M->>P1L: Create a serial port object
+M->>R: Record readings from smartmeter data
+R->>P1L: Retrieve data from P1 Listener
+M->>P2I: Push recorded data to InfluxDB
+P2I->>M: Return number of pushed records
+Note over M: If any error occurs, log the error and continue
+```
+
 ## InfluxDB Setup
 
 This script supports both a local InfluxDB instance or the InfluxDB SaaS. To get started with InfluxDB, follow the instructions on their [official documentation](https://docs.influxdata.com/influxdb/v2.0/get-started/).
@@ -42,7 +62,7 @@ Replace `<Your_InfluxDB_URL>`, `<Your_InfluxDB_Token>`, `<Your_InfluxDB_Org>`, a
 
 Update the following with settings appropriate for your situation. For details of serial_settings and telegram_specification, see the documentation for [dsmr_parser](https://github.com/ndokter/dsmr_parser): 
 
-```
+```python
         # Update for serial port configuration and meter type
         # See imports for serial_settings and telegram_specifications
         serial_reader = SerialReader(
@@ -56,7 +76,7 @@ Update the following with settings appropriate for your situation. For details o
 
 The script can be run interactively and provides feedback on stdout. It is better run as a service. I run it as a daemon on OpenBSD with the following rc script:
 
-```
+```sh
 #!/bin/ksh
 
 # $OpenBSD$
