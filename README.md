@@ -4,6 +4,7 @@ Script to read data from a P1 port of the ISKRA AM550 smartmeter. Data from the 
 
 ## Requirements
 
+- P1 Smartmeter cable (RJ11 - USB)
 - Python 3.9 - 3.11
 - [dsmr_parser](https://github.com/ndokter/dsmr_parser) library by [Nigel Dokter](https://github.com/ndokter).
 - Access to an InfluxDB server or InfluxDB cloud instance
@@ -30,6 +31,9 @@ M->>P2I: Push recorded data to InfluxDB
 P2I->>M: Return number of pushed records
 Note over M: If any error occurs, log the error and continue
 ```
+## Cable
+
+You'll need a cable to connect your smartmeter to whatever device (I use a RPi Model 3) you are running the script on. I bought mine [bol.com](https://www.bol.com/nl/nl/p/slimme-meter-kabel-p1-usb/9200000111535827/) but it's relatively straightforward to [make one](https://www.domoticz.com/forum/viewtopic.php?f=14&t=4970) with an RJ11 crimper and an old USB cable. 
 
 ## InfluxDB Setup
 
